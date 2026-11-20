@@ -51,6 +51,11 @@ button.pz:active{transform:scale(.97)}
 .no .h::after{content:"";position:absolute;right:-8px;top:-5px;border:6px solid transparent;border-left:8px solid var(--mute)}
 .no .t{margin-left:10px;border:2px solid var(--line);border-radius:8px;padding:6px 8px;color:var(--ink)}
 .no b{position:absolute;left:0;bottom:calc(50% + 4px);color:var(--bad);font-size:13px}
+.dwrap{background:none;color:var(--ink);padding:0;display:grid;grid-template-columns:minmax(0,1fr) 104px;align-items:start;text-align:start}
+.dwrap .dmini{display:flex;flex-direction:column;align-items:center;width:100%}
+.dwrap .dia{width:100%}
+.dwrap .no{margin-top:44px;transform:translateY(-50%)}
+.si2{font-size:13px;font-weight:800;color:var(--ok);margin-top:2px}
 .slot{width:min(100%,300px);min-height:56px;border:2px dashed var(--line);border-radius:12px;display:flex;align-items:center;justify-content:center;color:var(--mute);font-size:14px;position:relative}
 .slot.full{border:0}
 .slot .n{position:absolute;left:-30px;top:50%;transform:translateY(-50%);font-weight:800;color:var(--mute);font-size:14px}
@@ -152,6 +157,8 @@ const T=60,$=id=>document.getElementById(id);
 let r=0,score=0,placed=[],order=[],left=T,timer=null,done=false,log=[],name="";
 
 const piece=(i,tag)=>{const[k,txt]=ROUNDS[r].p[i];return `<${tag} class="pz ${k}" data-i="${i}">${txt}</${tag}>`};
+const poolPiece=i=>{const[k,txt,dest]=ROUNDS[r].p[i];if(k!=="dia")return piece(i,"button");
+  return `<button class="pz dwrap" data-i="${i}" aria-label="${txt} Sí: sigue abajo. No: ${dest}"><span class="dmini"><span class="pz dia">${txt}</span><span class="si2">↓ Sí</span></span><span class="no"><span class="h"></span><b>No</b><span class="t">${dest}</span></span></button>`};
 const shuffle=a=>{a=a.slice();for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a};
 
 function hud(){$("pName").textContent=name||"—";$("pRound").textContent=`Ronda ${Math.min(r+1,ROUNDS.length)}/${ROUNDS.length}`;$("pScore").textContent=`${score} pts`;$("pTime").textContent=`${left} s`;$("bar").style.width=(left/T*100)+"%"}
@@ -174,7 +181,7 @@ function draw(marks,show){
     const no=isD?`<div class="no"><span class="h"></span><b>No</b><span class="t">${p[2]}</span></div>`:"<div></div>";
     const arr=k<n-1?`<div class="line"><div class="mid"><div class="arrow"></div>${isD?'<span class="si">Sí</span>':""}</div><div></div></div>`:"";
     return `<div class="line"><div class="mid"><div class="slot${i===undefined?"":" full"}${show?"":m}"><span class="n">${k+1}</span>${inner}</div></div>${no}</div>${arr}`}).join("");
-  $("pool").innerHTML=order.filter(i=>!placed.includes(i)).map(i=>piece(i,"button")).join("")||`<p style="color:var(--mute);margin:0">¡Ya colocaste todas! Pulsa <b>Revisar</b>.</p>`;
+  $("pool").innerHTML=order.filter(i=>!placed.includes(i)).map(poolPiece).join("")||`<p style="color:var(--mute);margin:0">¡Ya colocaste todas! Pulsa <b>Revisar</b>.</p>`;
   $("check").disabled=done||placed.length<n;$("clear").disabled=done;
   if(done)$("pool").querySelectorAll("button").forEach(b=>b.disabled=true);
 }
