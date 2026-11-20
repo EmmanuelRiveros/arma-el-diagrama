@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Ranking en vivo</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Lexend:wght@400;600;800&display=swap" rel="stylesheet">
+<style>
+/* VOICE: pantalla de concurso para proyectar en el salón
+   IDEA: el podio final de un juego de preguntas
+   PICTURE: podio de tres escalones con los primeros lugares, lista debajo
+   COLOUR and TYPE: noche azul, cobalto, amarillo y tomate; Lexend
+   LAYOUT: QR para unirse a la izquierda, podio al centro, lista completa abajo */
+:root{--bg:#0f1424;--card:#18203a;--ink:#eef1fb;--mute:#a9b1cf;--line:#2c365a;--cob:#2347d8;--yel:#ffc93c;--tom:#ff5a36}
+*{box-sizing:border-box;min-width:0}
+body{margin:0;background:var(--bg);color:var(--ink);font:17px/1.5 Lexend,system-ui,sans-serif;overflow-x:clip}
+button{font:inherit;cursor:pointer;border:0}
+button:focus-visible{outline:3px solid var(--yel);outline-offset:2px}
+.top{background:var(--cob);padding:16px max(4vw,16px);display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+.top h1{margin:0;font-size:clamp(24px,4vw,36px);line-height:1.05;font-weight:800}
+.grow{flex:1}.pill{background:rgba(255,255,255,.16);border-radius:99px;padding:6px 14px;white-space:nowrap}
+.dot{display:inline-block;width:10px;height:10px;border-radius:50%;background:#7CFFB2;margin-right:6px;animation:bl 1.4s infinite}
+@keyframes bl{50%{opacity:.25}}
+main{max-width:1240px;margin:auto;padding:24px max(4vw,16px) 48px;display:grid;grid-template-columns:260px minmax(0,1fr);gap:28px;align-items:start}
+.join{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:18px;text-align:center}
+.join #qr{background:#fff;border-radius:12px;padding:10px;display:inline-block;line-height:0}
+.join #qr svg,.join #qr img{width:200px;height:200px}
+.join p{margin:10px 0 0;color:var(--mute);font-size:15px}
+.join code{color:var(--ink);overflow-wrap:anywhere;font-size:14px}
+.podium{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));align-items:end;gap:14px;min-height:340px}
+.step{display:flex;flex-direction:column;align-items:center;text-align:center}
+.step .nm{font-weight:800;font-size:clamp(18px,2.4vw,28px);line-height:1.1;margin-bottom:4px;overflow-wrap:anywhere}
+.step .pt{color:var(--mute);margin-bottom:10px;white-space:nowrap}
+.step .blk{width:100%;border-radius:14px 14px 0 0;display:flex;align-items:flex-start;justify-content:center;padding-top:14px;font-size:clamp(36px,5vw,60px);font-weight:800;color:#141a2e}
+.p1 .blk{height:220px;background:var(--yel)}.p2 .blk{height:160px;background:#dfe4f5}.p3 .blk{height:115px;background:var(--tom)}
+.empty{grid-column:1/-1;align-self:center;text-align:center;color:var(--mute);font-size:20px}
+.list{margin-top:26px;display:grid;gap:8px}
+.row{display:grid;grid-template-columns:48px minmax(0,1fr) auto;gap:12px;align-items:center;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:10px 16px}
+.row b{color:var(--mute)}.row span:last-child{font-weight:800;white-space:nowrap}
+.new{animation:pop .5s ease}
+@keyframes pop{from{transform:scale(.9);background:var(--cob)}to{transform:none}}
+.foot{margin-top:22px;display:flex;gap:10px;flex-wrap:wrap;align-items:center;color:var(--mute);font-size:14px}
+.btn{min-height:44px;padding:0 18px;border-radius:10px;background:transparent;color:var(--ink);border:2px solid var(--line);font-weight:600}
+.btn.danger{background:var(--tom);border-color:var(--tom);color:#fff}
+.hide{display:none!important}
+@media (prefers-reduced-motion:reduce){.dot,.new{animation:none}}
+@media(max-width:820px){main{grid-template-columns:minmax(0,1fr)}.join{order:2}.podium{min-height:280px}.p1 .blk{height:170px}.p2 .blk{height:120px}.p3 .blk{height:90px}}
+</style>
+</head>
+<body>
+<header class="top"><h1>Ranking en vivo · Arma el diagrama</h1><span class="grow"></span><span class="pill" id="state"><span class="dot"></span>Conectando…</span><span class="pill" id="count">0 jugadores</span></header>
+<main>
+  <aside class="join">
+    <div id="qr"></div>
+    <p>Escanea para jugar o entra a<br><code id="url"></code></p>
+  </aside>
+  <section>
+    <div class="podium" id="podium"><p class="empty">Esperando a los primeros jugadores…</p></div>
+    <div class="list" id="list"></div>
+    <div class="foot">
+      <span>Si alguien juega más de una vez, solo cuenta su mejor puntaje.</span><span class="grow"></span>
+      <button class="btn" id="reset">Reiniciar ranking</button>
+      <span id="confirm" class="hide">¿Borrar todos los puntajes? <button class="btn danger" id="yes">Sí, borrar</button> <button class="btn" id="no">Cancelar</button></span>
+    </div>
+  </section>
+</main>
+<script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.js"></script>
+<script>
+{
+const DB="https://diagramas-flujo-default-rtdb.firebaseio.com";
+const $=id=>document.getElementById(id);
+const esc=s=>String(s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const gameUrl=new URL("./",location.href).href;
+$("url").textContent=gameUrl.replace(/^https?:\/\//,"");
+try{const q=qrcode(0,"M");q.addData(gameUrl);q.make();$("qr").innerHTML=q.createSvgTag({cellSize:6,margin:0})}catch(e){$("qr").classList.add("hide")}
+
+let seen=new Set(),first=true;
+function render(data){
+  const best={};
+  for(const v of Object.values(data||{})){
+    if(!v||typeof v.name!=="string"||typeof v.score!=="number")continue;
+    const k=v.name.trim().toLowerCase();if(!k)continue;
+    if(!best[k]||v.score>best[k].score||(v.score===best[k].score&&v.t<best[k].t))best[k]={name:v.name.trim().slice(0,24),score:Math.max(0,Math.min(4000,Math.round(v.score))),t:v.t||0};
+  }
+  const all=Object.values(best).sort((a,b)=>b.score-a.score||a.t-b.t);
+  $("count").textContent=all.length+(all.length===1?" jugador":" jugadores");
+  const top=all.slice(0,3),order=[1,0,2],cls=["p1","p2","p3"];
+  $("podium").innerHTML=top.length?order.map(i=>top[i]?`<div class="step ${cls[i]}"><div class="nm">${esc(top[i].name)}</div><div class="pt">${top[i].score} pts</div><div class="blk">${i+1}</div></div>`:"<div></div>").join(""):`<p class="empty">Esperando a los primeros jugadores…</p>`;
+  $("list").innerHTML=all.slice(3).map((p,j)=>{const key=p.name+p.score,isNew=!first&&!seen.has(key);return `<div class="row${isNew?" new":""}"><b>${j+4}</b><span>${esc(p.name)}</span><span>${p.score} pts</span></div>`}).join("");
+  seen=new Set(all.map(p=>p.name+p.score));first=false;
+}
+function load(){return fetch(DB+"/scores.json").then(r=>{if(!r.ok)throw 0;return r.json()}).then(d=>{render(d);$("state").innerHTML='<span class="dot"></span>En vivo'}).catch(()=>{$("state").textContent="Sin conexión con la base de datos"})}
+load();
+try{
+  const es=new EventSource(DB+"/scores.json");
+  let tm=null;const again=()=>{clearTimeout(tm);tm=setTimeout(load,250)};
+  es.addEventListener("put",again);es.addEventListener("patch",again);
+  es.onerror=()=>{};
+}catch(e){}
+setInterval(load,15000);
+
+$("reset").onclick=()=>{$("confirm").classList.remove("hide");$("reset").classList.add("hide")};
+$("no").onclick=()=>{$("confirm").classList.add("hide");$("reset").classList.remove("hide")};
+$("yes").onclick=()=>{fetch(DB+"/scores.json",{method:"DELETE"}).then(load).finally(()=>$("no").onclick())};
+}
+</script>
+</body>
+</html>

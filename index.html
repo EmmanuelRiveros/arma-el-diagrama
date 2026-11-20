@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Arma el diagrama</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Lexend:wght@400;600;800&display=swap" rel="stylesheet">
+<style>
+/* VOICE: juego de clase, rápido y alegre, como un concurso en el celular
+   IDEA: una plantilla de diagrama de flujo con piezas recortables
+   PICTURE: el propio tablero: columna de casillas unidas por flechas y piezas con su forma real
+   COLOUR and TYPE: blanco papel, cobalto dominante, amarillo de rombo, tomate de acento; Lexend
+   LAYOUT: barra de ronda arriba, tablero centrado; en celular: casillas y debajo las piezas */
+:root{color-scheme:light dark;
+--bg:light-dark(#f6f7fb,#0f1424);--card:light-dark(#fff,#18203a);--ink:light-dark(#141a2e,#eef1fb);--mute:light-dark(#5b6382,#a9b1cf);
+--line:light-dark(#d8dcea,#2c365a);--cob:#2347d8;--yel:#ffc93c;--tom:#ff5a36;--ok:#0e9f7a;--bad:#e5383b}
+:root[data-theme=light]{color-scheme:light}:root[data-theme=dark]{color-scheme:dark}
+*{box-sizing:border-box;min-width:0}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.5 Lexend,system-ui,sans-serif;overflow-x:clip}
+button{font:inherit;cursor:pointer;border:0}
+button:focus-visible,input:focus-visible{outline:3px solid var(--yel);outline-offset:2px}
+.top{background:var(--cob);color:#fff;padding:14px max(4vw,14px)}
+.top .row{max-width:980px;margin:auto;display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+.top b{font-weight:800}.pill{background:rgba(255,255,255,.16);border-radius:99px;padding:4px 12px;white-space:nowrap;font-size:14px}
+.grow{flex:1}
+.bar{height:8px;background:rgba(255,255,255,.2);border-radius:9px;overflow:hidden;max-width:980px;margin:10px auto 0}
+.bar i{display:block;height:100%;background:var(--yel);width:100%;transition:width 1s linear}
+main{max-width:980px;margin:auto;padding:20px max(4vw,14px) 40px}
+h1{font-size:clamp(32px,6vw,48px);line-height:1.05;margin:0 0 10px;text-wrap:balance;font-weight:800}
+h2{font-size:22px;margin:0 0 4px;font-weight:800;text-wrap:balance}
+.lead{color:var(--mute);max-width:60ch;margin:0 0 18px}
+.panel{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:18px}
+/* piezas */
+.pz{display:flex;align-items:center;justify-content:center;text-align:center;min-height:56px;width:100%;
+padding:10px 18px;font-weight:600;font-size:15px;line-height:1.2;color:#fff;position:relative;transition:transform .15s}
+.pz small{display:block;font-weight:400;font-size:13px;opacity:.85}
+.oval{background:var(--ink);color:var(--bg);border-radius:999px}
+.rect{background:var(--cob);border-radius:6px}
+.io{background:var(--tom);clip-path:polygon(9% 0,100% 0,91% 100%,0 100%);padding-inline:14%}
+.dia{background:var(--yel);color:#141a2e;clip-path:polygon(50% 0,100% 50%,50% 100%,0 50%);min-height:88px;padding:14px 18%}
+button.pz:hover{transform:translateY(-2px)}
+button.pz:active{transform:scale(.97)}
+.board{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:18px;align-items:start}
+.slots{display:flex;flex-direction:column;align-items:center}
+.line{display:grid;grid-template-columns:minmax(0,1fr) 104px;width:100%;align-items:center}
+.line>.mid{display:flex;flex-direction:column;align-items:center;position:relative}
+.si{position:absolute;left:calc(50% + 10px);top:2px;font-size:13px;font-weight:800;color:var(--ok)}
+.no{display:flex;align-items:center;font-size:13px;line-height:1.2;position:relative}
+.no .h{width:18px;height:2px;background:var(--mute);position:relative;flex:none}
+.no .h::after{content:"";position:absolute;right:-8px;top:-5px;border:6px solid transparent;border-left:8px solid var(--mute)}
+.no .t{margin-left:10px;border:2px solid var(--line);border-radius:8px;padding:6px 8px;color:var(--ink)}
+.no b{position:absolute;left:0;bottom:calc(50% + 4px);color:var(--bad);font-size:13px}
+.slot{width:min(100%,300px);min-height:56px;border:2px dashed var(--line);border-radius:12px;display:flex;align-items:center;justify-content:center;color:var(--mute);font-size:14px;position:relative}
+.slot.full{border:0}
+.slot .n{position:absolute;left:-30px;top:50%;transform:translateY(-50%);font-weight:800;color:var(--mute);font-size:14px}
+.slot.good{outline:3px solid var(--ok);outline-offset:3px;border-radius:12px}
+.slot.wrong{outline:3px solid var(--bad);outline-offset:3px;border-radius:12px}
+.arrow{width:2px;height:20px;background:var(--mute);position:relative;margin:2px 0 6px}
+.arrow::after{content:"";position:absolute;left:-5px;bottom:-6px;border:6px solid transparent;border-top:8px solid var(--mute)}
+.pool{display:grid;gap:12px}
+.pool .lbl,.slots .lbl{font-size:14px;color:var(--mute);margin:0 0 6px;align-self:flex-start}
+.actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:18px}
+.btn{min-height:48px;padding:0 22px;border-radius:12px;background:var(--cob);color:#fff;font-weight:800}
+.btn.alt{background:transparent;color:var(--ink);border:2px solid var(--line)}
+.btn.big{background:var(--tom);font-size:18px;min-height:56px}
+.btn:disabled{opacity:.4;cursor:not-allowed}
+.fb{margin-top:16px;border-radius:14px;padding:14px 16px;font-weight:600}
+.fb.ok{background:color-mix(in srgb,var(--ok) 16%,transparent)}.fb.no{background:color-mix(in srgb,var(--bad) 14%,transparent)}
+input{font:inherit;font-size:18px;min-height:52px;width:min(100%,360px);padding:0 14px;border-radius:12px;border:2px solid var(--line);background:var(--card);color:var(--ink)}
+.legend{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin:22px 0}
+.legend .pz{min-height:64px;font-size:14px}
+.legend .dia{min-height:84px}
+.score{font-size:clamp(56px,14vw,104px);font-weight:800;line-height:1;color:var(--cob)}
+:root[data-theme=dark] .score{color:var(--yel)}
+@media (prefers-color-scheme:dark){:root:not([data-theme=light]) .score{color:var(--yel)}}
+.rows{display:grid;gap:8px;margin:16px 0}
+.rows div{display:flex;justify-content:space-between;gap:10px;border-bottom:1px solid var(--line);padding:8px 0}
+.rows span:last-child{font-weight:800;white-space:nowrap}
+.hide{display:none!important}
+.pop{animation:pop .35s ease}
+@keyframes pop{from{transform:scale(.8);opacity:0}to{transform:none;opacity:1}}
+@media (prefers-reduced-motion:reduce){.pop{animation:none}.bar i{transition:none}}
+@media(max-width:640px){.board{grid-template-columns:minmax(0,1fr)}.legend{grid-template-columns:repeat(2,minmax(0,1fr))}.slot .n{left:-22px}.slots{padding-left:20px}}
+</style>
+</head>
+<body>
+<header class="top">
+  <div class="row"><b>Arma el diagrama</b><span class="grow"></span>
+    <span class="pill" id="pName">—</span><span class="pill" id="pRound">Ronda –</span><span class="pill" id="pScore">0 pts</span><span class="pill" id="pTime">60 s</span></div>
+  <div class="bar"><i id="bar"></i></div>
+</header>
+
+<main>
+  <section id="start">
+    <h1>Arma el diagrama de flujo</h1>
+    <p class="lead">Toca las piezas en el orden correcto para construir cada diagrama, de arriba hacia abajo. Son 4 rondas de 60 segundos: ganas puntos por cada pieza en su lugar y un bono por velocidad si lo armas perfecto.</p>
+    <div class="legend">
+      <div class="pz oval">Inicio / Fin</div>
+      <div class="pz rect">Proceso</div>
+      <div class="pz dia">Decisión</div>
+      <div class="pz io">Entrada / Salida</div>
+    </div>
+    <label for="name" style="display:block;font-weight:600;margin-bottom:6px">Tu nombre</label>
+    <input id="name" maxlength="24" autocomplete="off" placeholder="Escribe tu nombre">
+    <div class="actions"><button class="btn big" id="go">¡Jugar!</button></div>
+  </section>
+
+  <section id="game" class="hide">
+    <h2 id="gTitle"></h2>
+    <p class="lead" id="gHint"></p>
+    <div class="board">
+      <div class="slots panel" id="slots"></div>
+      <div class="panel"><p class="lbl" style="margin-top:0;color:var(--mute);font-size:14px">Piezas — toca para colocar · toca una colocada para regresarla</p><div class="pool" id="pool"></div></div>
+    </div>
+    <div id="fb"></div>
+    <div class="actions">
+      <button class="btn" id="check" disabled>Revisar</button>
+      <button class="btn alt" id="clear">Borrar todo</button>
+      <button class="btn alt hide" id="sol">Ver solución</button>
+      <button class="btn big hide" id="next">Siguiente ronda</button>
+    </div>
+  </section>
+
+  <section id="end" class="hide">
+    <p class="lead" style="margin:0">Puntaje final de <b id="eName"></b></p>
+    <div class="score pop" id="eScore">0</div>
+    <div class="rows" id="eRows"></div>
+    <p class="lead" id="eSend">Enviando tu puntaje al ranking…</p>
+    <div class="actions"><button class="btn" id="again">Jugar de nuevo</button></div>
+  </section>
+</main>
+
+<script>
+{
+const ROUNDS=[
+ {t:"Ronda 1 · ¿Llevo paraguas?",h:"Un proceso de la vida diaria con una decisión.",
+  p:[["oval","Inicio"],["io","Leer el pronóstico del clima"],["dia","¿Va a llover?","Salir sin paraguas"],["rect","Tomar el paraguas"],["rect","Salir de casa"],["oval","Fin"]],
+  alts:[[0,1,2,3,4,5]]},
+ {t:"Ronda 2 · ¿Aprobé la materia?",h:"Primero se calcula, luego se decide.",
+  p:[["oval","Inicio"],["io","Leer calificaciones a, b, c"],["rect","P = (a + b + c) / 3"],["dia","¿P ≥ 70?","Mostrar «Reprobado»"],["io","Mostrar «Aprobado»"],["oval","Fin"]],
+  alts:[[0,1,2,3,4,5]]},
+ {t:"Ronda 3 · Compuerta AND (S = A·B)",h:"La salida es 1 solo si las dos condiciones se cumplen.",
+  p:[["oval","Inicio"],["io","Leer A y B"],["dia","¿A = 1?","S = 0"],["dia","¿B = 1?","S = 0"],["rect","S = 1"],["io","Mostrar S"],["oval","Fin"]],
+  alts:[[0,1,2,3,4,5,6],[0,1,3,2,4,5,6]]},
+ {t:"Ronda 4 · Alarma S = A·(P + V)",h:"Suena si está activada Y se abre la puerta O la ventana.",
+  p:[["oval","Inicio"],["io","Leer A, P y V"],["dia","¿A = 1?","Alarma apagada"],["dia","¿P = 1 o V = 1?","Alarma apagada"],["rect","Encender alarma (S = 1)"],["io","Mostrar «¡Alerta!»"],["oval","Fin"]],
+  alts:[[0,1,2,3,4,5,6],[0,1,3,2,4,5,6]]}
+];
+const DB="https://diagramas-flujo-default-rtdb.firebaseio.com";
+const T=60,$=id=>document.getElementById(id);
+let r=0,score=0,placed=[],order=[],left=T,timer=null,done=false,log=[],name="";
+
+const piece=(i,tag)=>{const[k,txt]=ROUNDS[r].p[i];return `<${tag} class="pz ${k}" data-i="${i}">${txt}</${tag}>`};
+const shuffle=a=>{a=a.slice();for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a};
+
+function hud(){$("pName").textContent=name||"—";$("pRound").textContent=`Ronda ${Math.min(r+1,ROUNDS.length)}/${ROUNDS.length}`;$("pScore").textContent=`${score} pts`;$("pTime").textContent=`${left} s`;$("bar").style.width=(left/T*100)+"%"}
+
+function startRound(){
+  const R=ROUNDS[r];done=false;placed=[];left=T;
+  do{order=shuffle(R.p.map((_,i)=>i))}while(R.alts.some(a=>a.join()===order.join()));
+  $("gTitle").textContent=R.t;$("gHint").textContent=R.h;$("fb").innerHTML="";
+  ["sol","next"].forEach(x=>$(x).classList.add("hide"));["check","clear"].forEach(x=>$(x).classList.remove("hide"));
+  draw();hud();clearInterval(timer);
+  timer=setInterval(()=>{left--;hud();if(left<=0){clearInterval(timer);check(true)}},1000);
+}
+
+function draw(marks,show){
+  const R=ROUNDS[r],n=R.p.length,seq=show||placed;
+  $("slots").innerHTML=`<p class="lbl">Tu diagrama</p>`+Array.from({length:n},(_,k)=>{
+    const i=seq[k],m=marks?(marks[k]?" good":" wrong"):"";
+    const inner=i===undefined?"Paso "+(k+1):piece(i,done?"div":"button");
+    const p=i===undefined?null:R.p[i],isD=p&&p[0]==="dia";
+    const no=isD?`<div class="no"><span class="h"></span><b>No</b><span class="t">${p[2]}</span></div>`:"<div></div>";
+    const arr=k<n-1?`<div class="line"><div class="mid"><div class="arrow"></div>${isD?'<span class="si">Sí</span>':""}</div><div></div></div>`:"";
+    return `<div class="line"><div class="mid"><div class="slot${i===undefined?"":" full"}${show?"":m}"><span class="n">${k+1}</span>${inner}</div></div>${no}</div>${arr}`}).join("");
+  $("pool").innerHTML=order.filter(i=>!placed.includes(i)).map(i=>piece(i,"button")).join("")||`<p style="color:var(--mute);margin:0">¡Ya colocaste todas! Pulsa <b>Revisar</b>.</p>`;
+  $("check").disabled=done||placed.length<n;$("clear").disabled=done;
+  if(done)$("pool").querySelectorAll("button").forEach(b=>b.disabled=true);
+}
+
+$("pool").addEventListener("click",e=>{const b=e.target.closest("button.pz");if(!b||done)return;placed.push(+b.dataset.i);draw()});
+$("slots").addEventListener("click",e=>{const b=e.target.closest("button.pz");if(!b||done)return;const i=+b.dataset.i;placed=placed.filter(x=>x!==i);draw()});
+$("clear").onclick=()=>{placed=[];draw()};
+
+function check(timeout){
+  if(done)return;done=true;clearInterval(timer);
+  const R=ROUNDS[r],n=R.p.length;
+  let best=R.alts[0],bk=-1;
+  for(const a of R.alts){const k=a.filter((v,j)=>placed[j]===v).length;if(k>bk){bk=k;best=a}}
+  const marks=best.map((v,j)=>placed[j]===v);
+  const perfect=bk===n,base=Math.round(600*bk/n),bonus=perfect?Math.round(400*left/T):0,pts=base+bonus;
+  score+=pts;log.push([R.t.split(" · ")[1],pts]);r_best=best;
+  draw(marks);hud();
+  $("fb").innerHTML=`<div class="fb ${perfect?"ok":"no"} pop">${perfect?"¡Perfecto! Diagrama correcto.":(timeout&&placed.length<n?"¡Se acabó el tiempo! ":"")+`${bk} de ${n} piezas en su lugar.`} +${pts} pts${bonus?` (incluye ${bonus} de bono por velocidad)`:""}</div>`;
+  $("check").classList.add("hide");$("clear").classList.add("hide");
+  if(!perfect)$("sol").classList.remove("hide");
+  $("next").textContent=r<ROUNDS.length-1?"Siguiente ronda":"Ver mi puntaje";$("next").classList.remove("hide");
+}
+let r_best=null;
+$("check").onclick=()=>check(false);
+$("sol").onclick=()=>{draw(null,r_best);$("slots").querySelector(".lbl").textContent="Solución";$("sol").classList.add("hide")};
+$("next").onclick=()=>{r++;if(r<ROUNDS.length){startRound();window.scrollTo({top:0})}else finish()};
+
+function finish(){
+  $("game").classList.add("hide");$("end").classList.remove("hide");
+  $("eName").textContent=name;$("eScore").textContent=score;
+  $("eRows").innerHTML=log.map(([t,p])=>`<div><span>${t}</span><span>${p} pts</span></div>`).join("");
+  left=0;hud();window.scrollTo({top:0});
+  const s=$("eSend");s.textContent="Enviando tu puntaje al ranking…";
+  fetch(DB+"/scores.json",{method:"POST",body:JSON.stringify({name:name.slice(0,24),score,t:Date.now()})})
+    .then(res=>{if(!res.ok)throw 0;s.textContent="✔ Tu puntaje ya está en el ranking. ¡Mira la pantalla!"})
+    .catch(()=>{s.textContent="No se pudo enviar al ranking. Muéstrale esta pantalla al expositor."});
+}
+
+function begin(){
+  name=$("name").value.trim();if(!name){$("name").focus();$("name").placeholder="Escribe tu nombre primero";return}
+  try{localStorage.setItem("diag-name",name)}catch(e){}
+  r=0;score=0;log=[];$("start").classList.add("hide");$("end").classList.add("hide");$("game").classList.remove("hide");startRound();
+}
+$("go").onclick=begin;$("name").addEventListener("keydown",e=>{if(e.key==="Enter")begin()});
+$("again").onclick=()=>{$("end").classList.add("hide");begin()};
+try{$("name").value=localStorage.getItem("diag-name")||""}catch(e){}
+hud();
+}
+</script>
+</body>
+</html>
